@@ -1,0 +1,295 @@
+import lvgl as lv
+lv.init()
+import SDL
+SDL.init(w=1024,h=690)
+
+#Register SDL display driver.
+
+disp_buf1 = lv.disp_buf_t()
+buf1_1 = bytearray(480*10)
+disp_buf1.init(buf1_1, None, len(buf1_1)//4)
+disp_drv = lv.disp_drv_t()
+disp_drv.init()
+disp_drv.buffer = disp_buf1
+disp_drv.flush_cb = SDL.monitor_flush
+disp_drv.hor_res = 1024
+disp_drv.ver_res = 690
+disp_drv.register()
+
+# Regsiter SDL mouse driver
+
+indev_drv = lv.indev_drv_t()
+indev_drv.init() 
+indev_drv.type = lv.INDEV_TYPE.POINTER;
+indev_drv.read_cb = SDL.mouse_read;
+indev_drv.register();
+
+#variable definition
+LV_THEME_DEFAULT_COLOR_PRIMARY=lv.color_hex(0x01a2b1)
+LV_THEME_DEFAULT_COLOR_SECONDARY=lv.color_hex(0x44d1b6)
+Project_list=[]
+Project_names =[]
+cb_pos = -150
+
+
+#Dark/Light Mode
+def color_chg_event_cb(sw, e):
+    if e == lv.EVENT.VALUE_CHANGED:
+        flag = lv.THEME_MATERIAL_FLAG.LIGHT
+        if sw.get_state():
+            flag=lv.THEME_MATERIAL_FLAG.DARK
+        theme = lv.theme_material_init(LV_THEME_DEFAULT_COLOR_PRIMARY,LV_THEME_DEFAULT_COLOR_SECONDARY,flag,
+                                       lv.theme_get_font_small(), lv.theme_get_font_normal(), lv.theme_get_font_subtitle(),
+                                       lv.theme_get_font_title())
+def LV_DPX(n):
+    if n == 0:
+        return n
+    scr=lv.scr_act()
+    display = scr.get_disp()
+    dpi = display.get_dpi()
+    # print("dpi: ",dpi)
+    tmp = (dpi*n+80)//160
+    # print("tmp: ",tmp)
+    if tmp > 1:
+        return tmp
+    else:
+        return 1
+def event_handler(evt,source):
+	if evt == lv.EVENT.VALUE_CHANGED:
+		date = lv.calendar.get_pressed_date(source)
+		if date:
+			print("%d"%(date.day))
+def cb_handler(source,evt):
+	if evt== lv.EVENT.VALUE_CHANGED:
+		if source.is_checked():
+			print("checked")
+		else:
+			print("unchecked")	
+def add_handler(source,evt):
+	if evt == lv.EVENT.CLICKED:
+		if source == btn1:
+			var = cb_pos + 20
+			cb2=lv.checkbox(cont)
+			#cb2.set_text(input())
+			screen = lv.obj(None,None)
+			lv.scr_load_anim(screen,lv.SCR_LOAD_ANIM.FADE_ON,0,0,True)
+			#Project_name = lv.textarea(screen,None)
+			#Project_name.set_width(100)
+			#Project_name.set_pos(90,90)
+			cb2.align(None,lv.ALIGN.CENTER,-150,var)
+			Project_list.append(cb2)
+			Project_names.append(cb2.get_text())
+			roller3.set_options("\n".join(Project_names),lv.roller.MODE.INFINITE)
+			#print(Project_names)
+			
+			
+			
+			
+			
+def clear_handler(source,evt):
+	if evt == lv.EVENT.CLICKED:
+		if source == btn2:
+			for i in range(len(Project_list)):
+				Project_list[i].set_hidden(True)
+				roller3.set_options("No Projects Available",lv.roller.MODE.NORMAL)
+
+
+def set_handler(source,evt):
+	if evt == lv.EVENT.CLICKED:
+		if source == btn3:
+			if not(sw2.get_state()):
+				index_project = roller3.get_selected()
+				index_day = roller1.get_selected()
+				index_month = roller.get_selected()
+				index_year = roller2.get_selected()
+				label3.set_text(Project_names[index_project]+" : "+ str(index_day+1)+" / "+str(index_month+1)+" / "+str(2021+index_year))
+				label3.align(None,lv.ALIGN.CENTER,-50,-80)
+				highlighted_days=[]
+				highlighted_days.append(lv.calendar_date_t())
+				highlighted_days[0].year = 2021+index_year
+				highlighted_days[0].month = index_month+1
+				highlighted_days[0].day = index_day+1
+				calendar.set_highlighted_dates(highlighted_days,1)
+				highlighted_days.pop()
+
+				
+				
+				
+			
+						
+		#main program
+scr = lv.obj()
+tabview = lv.tabview(scr)
+tab1=tabview.add_tab("Tab 1")
+tab2=tabview.add_tab("Tab 2")
+tab3=tabview.add_tab("Tab 3")
+
+		#create the switch for Dark/Light Mode
+sw1 = lv.switch(scr)
+sw1.align(None, lv.ALIGN.CENTER, 0, 0)
+sw1.set_event_cb(color_chg_event_cb)
+sw1.set_pos(LV_DPX(10), LV_DPX(10))
+sw1.set_style_local_value_str(lv.switch.PART.BG, lv.STATE.DEFAULT, "Dark")
+sw1.set_style_local_value_align(lv.switch.PART.BG, lv.STATE.DEFAULT, lv.ALIGN.OUT_RIGHT_MID)
+sw1.set_style_local_value_ofs_x(lv.switch.PART.BG, lv.STATE.DEFAULT, 130//35)
+		
+		
+		#calendar creation
+calendar = lv.calendar(tab1)
+calendar.set_size(400,400)
+calendar.align(None,lv.ALIGN.CENTER,-300,-90)
+calendar.set_event_cb(event_handler)
+calendar.set_style_local_text_font(lv.calendar.PART.DATE,lv.STATE.DEFAULT,lv.theme_get_font_small())
+today = lv.calendar_date_t()
+today.year = 2021;
+today.month = 5;
+today.day = 5
+calendar.set_today_date(today)
+calendar.set_showed_date(today)
+
+
+	       #Container creation
+
+cont=lv.obj(tab1)
+cont.set_size(500,500)
+cont.align(None,lv.ALIGN.CENTER,160,-30)
+cont.set_drag(False)
+cb=lv.checkbox(cont)
+cb.align(None,lv.ALIGN.CENTER,-150,cb_pos)
+cb.set_text("Micropython GUI project")
+cb.set_event_cb(cb_handler)
+Project_list.append(cb)
+Project_names.append(cb.get_text())
+btn1=lv.btn(cont)
+btn1.align(None,lv.ALIGN.CENTER,150,180)
+btn1.set_event_cb(add_handler)
+label1=lv.label(btn1,None)
+label1.set_text("ADD")
+btn2=lv.btn(cont)
+btn2.set_event_cb(clear_handler)
+btn2.align(None,lv.ALIGN.CENTER,0,180)
+label2=lv.label(btn2,None)
+label2.set_text("CLEAR")
+cont2=lv.obj(tab1)
+cont2.set_size(400,200)
+cont2.align(None,lv.ALIGN.CENTER,-300,210)
+cont2.set_drag(False)
+label3=lv.label(cont2,None)
+label3.align(None,lv.ALIGN.CENTER,-20,0)
+label3.set_text("No Deadlines")
+sw2=lv.switch(cont2)
+sw2.align(None,lv.ALIGN.CENTER,170,70)
+sw2.set_style_local_value_str(lv.switch.PART.BG, lv.STATE.DEFAULT, "Do Not Disturb")
+sw2.set_style_local_value_align(lv.switch.PART.BG, lv.STATE.DEFAULT, lv.ALIGN.OUT_LEFT_MID)
+cont3=lv.obj(tab2)
+cont3.set_size(440,300)
+cont3.align(None,lv.ALIGN.CENTER,-280,-150)
+cont.set_drag(False)
+label4=lv.label(cont3,None)
+label4.align(None,lv.ALIGN.CENTER,-100,-120)
+label4.set_text("Set Deadline")
+roller=lv.roller(cont3)
+roller.align(None,lv.ALIGN.CENTER,-100,-50)
+roller.set_options("January\n"
+		    "Feburuary\n"
+		    "March\n"
+		    "May\n"
+		    "June\n"
+		    "July\n"
+		    "August\n"
+		    "Semptember\n"
+		    "October\n"
+		    "November\n"
+		    "December\n"
+		    ,lv.roller.MODE.INFINITE)
+roller.set_visible_row_count(2)
+roller1=lv.roller(cont3)
+roller1.set_options("1\n"
+		   "2\n"
+		   "3\n"
+		   "4\n"
+		   "5\n"
+		   "6\n"
+		   "7\n"
+		   "8\n"
+		   "10\n"
+		   "11\n"
+		   "12\n"
+		   "13\n"
+		   "14\n"
+		   "15\n"
+		   "16\n"
+		   "17\n"
+		   "18\n"
+		   "19\n"
+		   "20\n"
+		   "21\n"
+		   "22\n"
+		   "23\n"
+		   "24\n"
+		   "25\n"
+		   "26\n"
+		   "27\n"
+		   "28\n"
+		   "29\n"
+		   "30\n"
+		   "31\n",
+		   lv.roller.MODE.INFINITE)
+roller1.align(None,lv.ALIGN.CENTER,30,-50)
+roller1.set_visible_row_count(2)
+roller2=lv.roller(cont3)
+roller2.set_options("2021\n"
+		    "2022\n"
+		    "2023\n"
+		    "2024\n"
+		    "2025\n"
+		    "2026\n"
+		    "2027\n"
+		    "2028\n"
+		    "2029\n"
+		    "2030\n",
+		    lv.roller.MODE.INFINITE)
+roller2.align(None,lv.ALIGN.CENTER,120,-50)
+roller2.set_visible_row_count(2)
+label5=lv.label(cont3,None)
+label5.align(None,lv.ALIGN.CENTER,-100,30)
+label5.set_text("Attribute to Project")
+ddlist=lv.dropdown(cont3)
+ddlist.align(None,lv.ALIGN.CENTER,-100,80)
+ddlist.set_width(230)
+ddlist.set_options("Micropython GUI Project")
+btn3=lv.btn(cont3)
+btn3.set_event_cb(set_handler)
+btn3.align(None,lv.ALIGN.CENTER,150,80)
+label6=lv.label(btn3,None)
+label6.set_text("SET")
+
+
+
+
+		   
+		   
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Load the screen
+while(1):
+	lv.scr_load(scr)
+	
+	
+	
+	
